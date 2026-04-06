@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoTask - Your Premium Task Reminder</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-mesh"></div>
+
+    <main class="app-container">
+        <header>
+            <h1>Chrono<span>Task</span></h1>
+            <p>Empower your productivity</p>
+        </header>
+
+        <div class="main-content">
+            <section class="task-input-section glass-panel">
+                <div class="board-header">
+                    <h2>Add a Task</h2>
+                </div>
+                <form id="taskForm">
+                    <div class="input-group">
+                        <input type="text" id="taskTitle" placeholder="What needs to be done?" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="taskDesc" placeholder="Description (optional)">
+                    </div>
+                    <div class="input-group icon-input">
+                        <i class="fa-solid fa-clock"></i>
+                        <input type="datetime-local" id="taskReminder" title="Set Reminder Time">
+                    </div>
+                    <button type="submit" class="btn-primary">Add Task</button>
+                </form>
+            </section>
+
+            <section class="tasks-board">
+                <div class="board-header">
+                    <h2>Your Tasks</h2>
+                </div>
+                <div class="tasks-list" id="tasksList">
+                    <!-- Task items will be dynamically injected here -->
+                </div>
+            </section>
+        </div>
+
+        <section class="suggestions-section glass-panel">
+            <div class="board-header">
+                <h2>Task Suggestions</h2>
+            </div>
+            <div class="suggestions-list" id="suggestionsList">
+                <!-- Suggestions will be injected here -->
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; All rights reserved. Brought to you by Jboy</p>
+        </footer>
+    </main>
+
+    <!-- Notification Container -->
+    <div id="notificationArea" class="notification-area"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

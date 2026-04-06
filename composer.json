@@ -1,0 +1,7 @@
+{
+    "name": "esther/todo-app",
+    "description": "A simple premium todo app with PHP backend",
+    "require": {
+        "php": ">=7.4"
+    }
+}
