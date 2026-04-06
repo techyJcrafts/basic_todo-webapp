@@ -1,6 +1,6 @@
 {
-    "name": "esther/todo-app",
-    "description": "A simple premium todo app with PHP backend",
+    "name": "techy-jboy/todo-app",
+    "description": "A simple premium todo app with a PHP backend",
     "require": {
         "php": ">=7.4"
     }
