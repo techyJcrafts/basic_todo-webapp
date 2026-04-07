@@ -1,31 +1,29 @@
 <?php
-include_once 'db.php';
+require_once 'db.php';
+use App\TaskRepository;
 
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(["message" => "Unauthorized. Please log in."]);
+    exit();
+}
+
+$user_id = (int)$_SESSION['user_id'];
 $method = $_SERVER['REQUEST_METHOD'];
+$taskRepo = new TaskRepository($conn);
 
 switch ($method) {
     case 'GET':
-        $stmt = $conn->prepare("SELECT * FROM tasks ORDER BY created_at DESC");
-        $stmt->execute();
-        $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode($tasks);
+        echo json_encode($taskRepo->findAllByUser($user_id));
         break;
 
     case 'POST':
-        $data = json_decode(file_get_contents("php://input"));
-        if (!empty($data->title)) {
-            $stmt = $conn->prepare("INSERT INTO tasks (title, description, reminder_time) VALUES (:title, :description, :reminder_time)");
-
-            $stmt->bindParam(":title", $data->title);
-            $stmt->bindValue(":description", isset($data->description) ? $data->description : null);
-            $stmt->bindValue(":reminder_time", isset($data->reminder_time) ? $data->reminder_time : null);
-
-            if ($stmt->execute()) {
-                $id = $conn->lastInsertId();
-                $fetchStmt = $conn->prepare("SELECT * FROM tasks WHERE id = :id");
-                $fetchStmt->bindParam(":id", $id);
-                $fetchStmt->execute();
-                echo json_encode($fetchStmt->fetch(PDO::FETCH_ASSOC));
+        $data = json_decode(file_get_contents("php://input"), true);
+        if (!empty($data['title'])) {
+            $task = $taskRepo->create($data, $user_id);
+            if ($task) {
+                http_response_code(201);
+                echo json_encode($task);
             } else {
                 http_response_code(503);
                 echo json_encode(["message" => "Unable to create task."]);
@@ -37,25 +35,22 @@ switch ($method) {
         break;
 
     case 'PUT':
-        $data = json_decode(file_get_contents("php://input"));
+        $data = json_decode(file_get_contents("php://input"), true);
         if (isset($_GET['id'])) {
-            $id = $_GET['id'];
-            if (isset($data->title)) {
-                $stmt = $conn->prepare("UPDATE tasks SET title = :title, description = :description WHERE id = :id");
-                $stmt->bindParam(":title", $data->title);
-                $stmt->bindValue(":description", isset($data->description) ? $data->description : null);
-                $stmt->bindParam(":id", $id);
-            } else if (isset($data->completed)) {
-                $stmt = $conn->prepare("UPDATE tasks SET completed = :completed WHERE id = :id");
-                $stmt->bindParam(":completed", $data->completed, PDO::PARAM_INT);
-                $stmt->bindParam(":id", $id);
+            $id = (int)$_GET['id'];
+            $success = false;
+
+            if (isset($data['title'])) {
+                $success = $taskRepo->updateDetails($id, $data, $user_id);
+            } else if (isset($data['completed'])) {
+                $success = $taskRepo->updateCompletion($id, (int)$data['completed'], $user_id);
             } else {
                 http_response_code(400);
                 echo json_encode(["message" => "Incomplete data for update."]);
-                break;
+                exit;
             }
 
-            if ($stmt->execute()) {
+            if ($success) {
                 echo json_encode(["message" => "Task updated."]);
             } else {
                 http_response_code(503);
@@ -69,11 +64,8 @@ switch ($method) {
 
     case 'DELETE':
         if (isset($_GET['id'])) {
-            $id = $_GET['id'];
-            $stmt = $conn->prepare("DELETE FROM tasks WHERE id = :id");
-            $stmt->bindParam(":id", $id);
-
-            if ($stmt->execute()) {
+            $id = (int)$_GET['id'];
+            if ($taskRepo->delete($id, $user_id)) {
                 echo json_encode(["message" => "Task deleted."]);
             } else {
                 http_response_code(503);
@@ -83,11 +75,6 @@ switch ($method) {
             http_response_code(400);
             echo json_encode(["message" => "Incomplete data."]);
         }
-        break;
-
-    default:
-        http_response_code(405);
-        echo json_encode(["message" => "Method not allowed."]);
         break;
 }
 ?>
