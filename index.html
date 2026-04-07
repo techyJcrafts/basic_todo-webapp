@@ -17,6 +17,13 @@
 <body>
     <div class="background-mesh"></div>
 
+    <nav class="top-nav">
+        <div class="user-bar">
+            <span id="welcomeUser">Welcome, Guest</span>
+            <button id="logoutBtn" class="nav-btn">Logout <i class="fa-solid fa-power-off"></i></button>
+        </div>
+    </nav>
+
     <main class="app-container">
         <header>
             <h1>Chrono<span>Task</span></h1>
@@ -28,7 +35,7 @@
                 <div class="board-header">
                     <h2>Add a Task</h2>
                 </div>
-                <form id="taskForm">
+                <form id="taskForm" class="standard-form">
                     <div class="input-group">
                         <input type="text" id="taskTitle" placeholder="What needs to be done?" required>
                     </div>

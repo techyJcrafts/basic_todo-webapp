@@ -3,15 +3,37 @@ let tasks = [];
 let notifiedTasks = new Set(); // Keep track of rendered notifications locally
 let suggestions = ['Buy groceries', 'Read 10 pages', 'Exercise for 30 mins', 'Call a friend'];
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    const authStatus = await checkAuthStatus();
+    if (!authStatus.authenticated) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    document.getElementById('welcomeUser').textContent = `Welcome, ${authStatus.username}`;
     fetchTasks();
     renderSuggestions();
 
     document.getElementById('taskForm').addEventListener('submit', handleAddTask);
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
     // Check for reminders every 30 secs
     setInterval(checkReminders, 30000);
 });
+
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('api/auth.php?action=session');
+        return await response.json();
+    } catch (err) {
+        return { authenticated: false };
+    }
+}
+
+async function handleLogout() {
+    await fetch('api/auth.php?action=logout');
+    window.location.href = 'login.html';
+}
 
 async function fetchTasks() {
     try {

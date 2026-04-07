@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ChronoTask</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="auth-page">
+    <div class="background-mesh"></div>
+    
+    <main class="app-container">
+        <header>
+            <h1>Chrono<span>Task</span></h1>
+            <p>Your premium personal manager</p>
+        </header>
+
+        <section class="auth-section glass-panel">
+            <div id="authTabs" class="auth-tabs">
+                <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+                <button class="tab-btn" onclick="switchTab('signup')">Sign Up</button>
+            </div>
+            
+            <div id="loginFormContainer" class="form-container">
+                <form id="loginForm" class="standard-form">
+                    <div class="input-group">
+                        <input type="text" id="loginUsername" placeholder="Username" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="loginPassword" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Login Now</button>
+                </form>
+            </div>
+
+            <div id="signupFormContainer" class="form-container" style="display: none;">
+                <form id="signupForm" class="standard-form">
+                    <div class="input-group">
+                        <input type="text" id="signupUsername" placeholder="New Username" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="signupPassword" placeholder="New Password" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Create Account</button>
+                </form>
+            </div>
+
+            <div id="authMessage" class="auth-message"></div>
+        </section>
+    </main>
+
+    <script>
+        function switchTab(tab) {
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            
+            if (tab === 'login') {
+                document.getElementById('loginFormContainer').style.display = 'block';
+                document.getElementById('signupFormContainer').style.display = 'none';
+                btns[0].classList.add('active');
+            } else {
+                document.getElementById('loginFormContainer').style.display = 'none';
+                document.getElementById('signupFormContainer').style.display = 'block';
+                btns[1].classList.add('active');
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('authMessage');
+            try {
+                const response = await fetch('api/auth.php?action=login', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: document.getElementById('loginUsername').value,
+                        password: document.getElementById('loginPassword').value
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    window.location.href = 'index.html';
+                } else {
+                    msg.textContent = data.message;
+                    msg.style.color = 'var(--danger)';
+                }
+            } catch (err) {
+                msg.textContent = "Error connecting to server.";
+            }
+        });
+
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('authMessage');
+            try {
+                const response = await fetch('api/auth.php?action=signup', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: document.getElementById('signupUsername').value,
+                        password: document.getElementById('signupPassword').value
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    msg.textContent = data.message;
+                    msg.style.color = 'var(--success)';
+                    switchTab('login');
+                } else {
+                    msg.textContent = data.message;
+                    msg.style.color = 'var(--danger)';
+                }
+            } catch (err) {
+                msg.textContent = "Error connecting to server.";
+            }
+        });
+    </script>
+</body>
+</html>
