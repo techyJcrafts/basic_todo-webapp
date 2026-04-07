@@ -1,5 +1,6 @@
 const API_URL = 'api/tasks.php';
 let tasks = [];
+let editingTaskId = null;
 let notifiedTasks = new Set(); // Keep track of rendered notifications locally
 let suggestions = ['Buy groceries', 'Read 10 pages', 'Exercise for 30 mins', 'Call a friend'];
 
@@ -52,33 +53,58 @@ async function handleAddTask(e) {
     const titleInput = document.getElementById('taskTitle');
     const descInput = document.getElementById('taskDesc');
     const reminderInput = document.getElementById('taskReminder');
+    const submitBtn = document.querySelector('#taskForm button[type="submit"]');
 
-    const newTask = {
+    const taskPayload = {
         title: titleInput.value.trim(),
         description: descInput.value.trim() || null,
         reminder_time: reminderInput.value || null
     };
 
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify(newTask),
-            headers: { 'Content-Type': 'application/json' }
-        });
+        if (editingTaskId) {
+            // Update existing task
+            const response = await fetch(`${API_URL}?id=${editingTaskId}`, {
+                method: 'PUT',
+                body: JSON.stringify(taskPayload),
+                headers: { 'Content-Type': 'application/json' }
+            });
 
-        if (response.ok) {
-            const addedTask = await response.json();
-            tasks.unshift(addedTask);
-            renderTasks();
+            if (response.ok) {
+                const taskIndex = tasks.findIndex(t => t.id == editingTaskId);
+                if (taskIndex !== -1) {
+                    tasks[taskIndex].title = taskPayload.title;
+                    tasks[taskIndex].description = taskPayload.description;
+                    tasks[taskIndex].reminder_time = taskPayload.reminder_time;
+                }
+                
+                // Allow alarms to fire again if time was changed
+                notifiedTasks.delete(editingTaskId);
+                editingTaskId = null;
+                submitBtn.innerHTML = 'Add Task';
+                document.querySelector('.task-input-section h2').textContent = 'Add a Task';
+            }
+        } else {
+            // Add new task
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(taskPayload),
+                headers: { 'Content-Type': 'application/json' }
+            });
 
-            // reset form
-            titleInput.value = '';
-            descInput.value = '';
-            reminderInput.value = '';
-            checkReminders(); // check immediately string task added
+            if (response.ok) {
+                const addedTask = await response.json();
+                tasks.unshift(addedTask);
+            }
         }
+
+        renderTasks();
+        titleInput.value = '';
+        descInput.value = '';
+        reminderInput.value = '';
+        checkReminders(); 
     } catch (error) {
-        console.error('Failed to add task:', error);
+        console.error('Failed to save task:', error);
     }
 }
 
@@ -95,6 +121,20 @@ async function toggleTask(id, currentStatus) {
         const taskIndex = tasks.findIndex(t => t.id == id);
         if (taskIndex !== -1) {
             tasks[taskIndex].completed = newStatus;
+            
+            // If task is restarted and time has passed, silently add to notified to prevent an instant stale alarm
+            if (newStatus === 0 && tasks[taskIndex].reminder_time) {
+                const reminderTime = new Date(tasks[taskIndex].reminder_time);
+                if (reminderTime <= new Date()) {
+                    notifiedTasks.add(id);
+                    
+                    // User requested UX: Prompt them if they want to update the stale date
+                    if (confirm("Welcome back! The reminder time for this task has already passed. Would you like to set a new time?")) {
+                        editTask(id);
+                    }
+                }
+            }
+            
             renderTasks();
         }
     } catch (error) {
@@ -106,30 +146,24 @@ async function editTask(id) {
     const task = tasks.find(t => t.id == id);
     if (!task) return;
 
-    const newTitle = prompt("Edit Task Title:", task.title);
-    if (newTitle === null || newTitle.trim() === '') return;
-
-    const newDesc = prompt("Edit Task Description (optional):", task.description || '');
-
-    try {
-        await fetch(`${API_URL}?id=${id}`, {
-            method: 'PUT',
-            body: JSON.stringify({
-                title: newTitle.trim(),
-                description: newDesc !== null ? newDesc.trim() : null
-            }),
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        const taskIndex = tasks.findIndex(t => t.id == id);
-        if (taskIndex !== -1) {
-            tasks[taskIndex].title = newTitle.trim();
-            tasks[taskIndex].description = newDesc !== null ? newDesc.trim() : null;
-            renderTasks();
-        }
-    } catch (error) {
-        console.error('Failed to update task:', error);
+    editingTaskId = id;
+    document.getElementById('taskTitle').value = task.title;
+    document.getElementById('taskDesc').value = task.description || '';
+    
+    if (task.reminder_time) {
+        // Form needs exactly YYYY-MM-DDTHH:MM
+        // e.g., '2023-10-05 14:30:00' -> '2023-10-05T14:30'
+        document.getElementById('taskReminder').value = task.reminder_time.replace(' ', 'T').substring(0, 16);
+    } else {
+        document.getElementById('taskReminder').value = '';
     }
+
+    const submitBtn = document.querySelector('#taskForm button[type="submit"]');
+    submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update Task';
+    document.querySelector('.task-input-section h2').textContent = 'Edit Task';
+
+    document.getElementById('taskForm').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('taskTitle').focus();
 }
 
 async function deleteTask(id) {
