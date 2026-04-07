@@ -1,0 +1,12 @@
+.git
+.vscode
+.gemini
+.dockerignore
+Dockerfile
+docker-compose.yml
+vendor/
+node_modules/
+.DS_Store
+.env
+.env.example
+*.log
